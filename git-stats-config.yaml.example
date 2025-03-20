@@ -1,0 +1,38 @@
+# Git Stats Configuration
+# List of repositories to analyze
+#repos:
+#  - "/path/to/repo1"
+#  - "/path/to/repo2"
+#  - "/path/to/repo3"
+
+# OR instead of specifying individual repos, you can specify a root directory
+# and the script will find all git repositories under it
+root_dir: "/path/to/root/directory"
+
+# Author to filter commits by
+author: "your.email@example.com"
+
+# Patterns for files to exclude
+exclude_patterns:
+  - "composer.lock"
+  - "package-lock.json"
+  - "^vendor/"
+  - "^node_modules/"
+  - "dist/"
+  - "build/"
+  - "public/build/"
+
+# List of commit hashes to ignore from the statistics
+# Eg, for ignoring things like moving a bunch of files around (or whatver)
+# Basically any commit that would skew the stats
+ignore_commits:
+  - "abc1234567890"  # Example commit hash to ignore
+  - "def9876543210"  # Another example commit hash
+
+# Optional: Only consider commits more recent than this date
+# Examples: "1 month ago", "2023-01-01", or null for all commits
+since: null
+
+# Output file paths
+output_file: "output/git-contribution-stats.png"  # Chart image path
+csv_file: "output/git-contribution-stats.csv"     # CSV stats export path
