@@ -288,6 +288,11 @@ def main():
     if not csv_file:
         print(f"Error: CSV file not specified. Use --csv to specify a file.")
         return
+
+    dirname = os.path.dirname(csv_file)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+        print(f"Created directory {dirname} for CSV file.")
     
     # If root_dir is specified, find all git repositories under it
     if root_dir:
