@@ -277,13 +277,18 @@ def main():
     # Command-line arguments override config file
     root_dir = args.root_dir if args.root_dir else config.get('root_dir')
     repos = args.repos if args.repos else config['repos']
-    author = args.author if args.author else config['author']
+    authorStr = args.author if args.author else config['author']
     exclude_patterns = args.exclude if args.exclude else config['exclude_patterns']
     since = args.since if args.since else config['since']
     output_file = args.output if args.output else config['output_file']
     csv_file = args.csv if args.csv else config['csv_file']
     ignore_commits = args.ignore_commits if args.ignore_commits else config['ignore_commits']
 
+
+    if not csv_file:
+        print(f"Error: CSV file not specified. Use --csv to specify a file.")
+        return
+    
     # If root_dir is specified, find all git repositories under it
     if root_dir:
         print(f"Finding git repositories under {root_dir}...")
@@ -310,49 +315,53 @@ def main():
     all_repos_stats = {}
     original_dir = os.getcwd()
 
-    for repo_path in valid_repos:
-        repo_name = os.path.basename(repo_path)
-        print(f"Processing {repo_name}...")
+    if ',' in authorStr: 
+        authors = [a.strip() for a in authorStr.split(',')]
+    else:
+        authors = [authorStr.strip()]
 
-        try:
-            stats, date_stats = get_git_stats(repo_path, author, exclude_patterns, since, ignore_commits)
+    with open(csv_file, 'w') as f:
+        f.write("Author,Repository,Lines Added,Lines Removed,Net Change,Commits\n")
+        for author in authors:
+            for repo_path in valid_repos:
+                repo_name = os.path.basename(repo_path)
+                print(f"Processing {repo_name}...")
 
-            # Only add repositories with actual contributions
-            if stats['added'] > 0 or stats['removed'] > 0:
-                all_repos_stats[repo_name] = stats
+                try:
+                    stats, date_stats = get_git_stats(repo_path, author, exclude_patterns, since, ignore_commits)
+                    # Only add repositories with actual contributions
+                    if stats['added'] > 0 or stats['removed'] > 0:
+                        all_repos_stats[repo_name] = stats
 
-                # Display per-repository stats
-                print(f"  Lines added: {stats['added']:,}")
-                print(f"  Lines removed: {stats['removed']:,}")
-                print(f"  Net change: {stats['total']:,}")
-                print(f"  Commits: {stats['commits']:,}")
-                print()
-            else:
-                print(f"  No contributions found. Omitting from results.")
-                print()
+                        # Display per-repository stats
+                        print(f"  Lines added: {stats['added']:,}")
+                        print(f"  Lines removed: {stats['removed']:,}")
+                        print(f"  Net change: {stats['total']:,}")
+                        print(f"  Commits: {stats['commits']:,}")
+                        print()
+                    else:
+                        print(f"  No contributions found. Omitting from results.")
+                        print()
 
-        except Exception as e:
-            print(f"Error processing {repo_name}: {e}")
-        finally:
-            os.chdir(original_dir)
+                except Exception as e:
+                    print(f"Error processing {repo_name}: {e}")
+                finally:
+                    os.chdir(original_dir)
 
-    if csv_file and all_repos_stats:
-        try:
-            with open(csv_file, 'w') as f:
-                f.write("Repository,Lines Added,Lines Removed,Net Change,Commits\n")
+            if all_repos_stats:
                 for repo, stats in all_repos_stats.items():
-                    f.write(f"{repo},{stats['added']},{stats['removed']},{stats['total']},{stats['commits']}\n")
+                    f.write(f"{author},{repo},{stats['added']},{stats['removed']},{stats['total']},{stats   ['commits']}    \n")
 
                 # Add total row
                 total_added = sum(stats['added'] for stats in all_repos_stats.values())
                 total_removed = sum(stats['removed'] for stats in all_repos_stats.values())
                 total_net = sum(stats['total'] for stats in all_repos_stats.values())
                 total_commits = sum(stats['commits'] for stats in all_repos_stats.values())
-                f.write(f"TOTAL,{total_added},{total_removed},{total_net},{total_commits}\n")
-
-            print(f"CSV export saved to {csv_file}")
-        except Exception as e:
-            print(f"Error exporting to CSV: {e}")
+        
+        total_change= total_added + total_removed
+        f.write(f"TOTAL,TOTAL ADDED, TOTAL REMOVED, TOTAL NET(added-removed), TOTAL CHANGE(added+removed), TOTALL COMMITS\n")
+        f.write(f"TOTAL,{total_added},{total_removed},{total_net},{total_change},{total_commits}\n")
+        print(f"CSV export saved to {csv_file}")
 
     # Generate and display/save chart
     if all_repos_stats:
